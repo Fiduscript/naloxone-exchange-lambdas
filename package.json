@@ -1,0 +1,28 @@
+{
+  "name": "naloxone-exchange-lambda-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "tslint --project tslint.json",
+    "test": "mocha -r ts-node/register src/**/*spec.ts",
+    "test-email": "tsc && node dist/lambda/email/index.js",
+    "zip": "npm run lint && npm run test && tsc && zip -r ../naloxone-exchange-lambdas.zip ."
+  },
+  "private": true,
+  "dependencies": {
+    "aws-sdk": "latest",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^6.0.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/mocha": "^5.2.6",
+    "@types/request-promise": "^4.1.42",
+    "ts-node": "~7.0.1",
+    "tslint": "~5.11.0",
+    "typescript": "~3.1.6"
+  }
+}
