@@ -4,9 +4,8 @@ import { IEmailData } from '../model/email/email-data';
 export class EmailNotifier {
     private static readonly client: SES = new SES({region: 'us-east-1'});
 
-    private readonly SOURCE_EMAIL_ADDR: string = 'info@fiduscript.com';
-    private sourceAddress: string;
-    private replyAddress: string;
+    private readonly sourceAddress: string;
+    private readonly replyAddress: string;
 
     constructor(sourceAddress: string, replyAddress: string) {
         this.sourceAddress = sourceAddress;
@@ -14,14 +13,13 @@ export class EmailNotifier {
     }
 
     public async notify(emailData: IEmailData, toAddresses: string[]): Promise<any> {
-        console.log(this.getEmailOptions(emailData, toAddresses));
         const promise = EmailNotifier.client.sendEmail(this.getEmailOptions(emailData, toAddresses)).promise();
         promise.then(() => {
             console.log('success');
         }).catch((err) => {
             console.log('ERROR', err);
         });
-        await promise;
+        return promise;
     }
 
     private getEmailOptions(emailData: IEmailData, toAddresses: string[]): SES.Types.SendEmailRequest {
@@ -41,9 +39,9 @@ export class EmailNotifier {
                     Data: emailData.subject
                 }
             },
-            Source: this.SOURCE_EMAIL_ADDR,
+            Source: this.sourceAddress,
             ReplyToAddresses: [
-                this.SOURCE_EMAIL_ADDR
+                this.replyAddress
             ]
         };
     }

@@ -8,6 +8,7 @@ const namespace = process.env.METRIC_NAMESPACE;
 const stage = process.env.STAGE;
 
 export const handler = async (event: any = {}): Promise<any> => {
+    const SUBJECT = 'Thank you for your Naloxone Exchange order!';
     let success = 0;
     let failure = 0;
 
@@ -17,16 +18,17 @@ export const handler = async (event: any = {}): Promise<any> => {
     }
 
     const publisher = new MetricPublisher(domain, metricName, namespace, stage);
-    const notifier = new EmailNotifier('info@fiduscript.com', 'info@fiduscript.com');
+    const notifier = new EmailNotifier('sales@fiduscript.com', 'sales@fiduscript.com');
 
     await Promise.all(
         event.Records.map(async (record: any) => {
-            if (record.eventName !== 'MODIFY') {
+            if (record.eventName !== 'INSERT') {
                 return Promise.resolve();
             }
 
             try {
-                await notifier.notify(new BusinessEmailData(record.dynamodb.NewImage.id.S, 'Test Subject'), ['lars@fiduscript.com']);
+                await notifier.notify(new BusinessEmailData(record.dynamodb.NewImage.id.S, SUBJECT),
+                    [record.dynamodb.NewImage.contactEmail.S]);
                 success++;
                 failure++;
             } catch (e) {
