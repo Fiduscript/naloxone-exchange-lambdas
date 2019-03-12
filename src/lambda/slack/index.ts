@@ -22,12 +22,12 @@ export const handler = async (event: any = {}): Promise<any> => {
 
     await Promise.all(
         event.Records.map(async (record: any) => {
-            if (record.eventName !== 'MODIFY') {
+            if (record.eventName !== 'INSERT') {
                 return Promise.resolve();
             }
 
             try {
-                await notifier.notify(`New order received: ${record.dynamodb.NewImage.id.S}]`);
+                await notifier.notify(`New order received: ${record.dynamodb.NewImage.id.S}`);
                 success++;
             } catch (e) {
                 console.log(`Failed to process order [${record.dynamodb.NewImage.id.S}]`);

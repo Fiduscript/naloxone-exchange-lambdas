@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  ProdBusinessOrderSlackNotificationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: prod_business_order_slack_notifier
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::981428227757:policy/cloud-watch-put-metric-access
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  ProdBusinessOrderEmailNotificationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: prod_business_order_email_notifier
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::981428227757:policy/cloud-watch-put-metric-access
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::981428227757:policy/ses_sales_fiduscript_send_mail
+
+  ProdBusinessOrderNotificationPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: prod_business_order_slack_notifier
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - lambda:InvokeFunction
+          - dynamodb:GetShardIterator
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          Resource:
+          - arn:aws:dynamodb:us-east-2:981428227757:table/prod_business_purchase_orders/stream/2019-03-12T05:36:18.695
+      Roles:
+      - !Ref ProdBusinessOrderSlackNotificationRole
+      - !Ref ProdBusinessOrderEmailNotificationRole
+
+  ProdBusinessOrderSlackNotificationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: prod_business_order_slack_notifier
+      Handler: '/dist/lambda/slack/index.handler'
+      Role:
+        Fn::GetAtt: [ ProdBusinessOrderSlackNotificationRole, Arn ]
+      Code:
+        S3Bucket: 'naloxone-exchange-lambda-functions'
+        S3Key: 'naloxone-exchange-lambdas.zip'
+      Runtime: 'nodejs8.10'
+      Timeout: 20
+      Environment:
+        Variables:
+          CHANNEL_HOST_NAME: 'hooks.slack.com'
+          CHANNEL_URI: '/services/T87PEA01X/BGEUXKCEP/ub3WVqBrHDs4vPtqzgQvZZkR'
+          DOMAIN: 'naloxoneexchange.com'
+          METRIC_NAME: 'BusinessPurchaseOrder'
+          METRIC_NAMESPACE: 'Order'
+          STAGE: 'Prod'
+
+  ProdBusinessOrderSlackStreamEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: arn:aws:dynamodb:us-east-2:981428227757:table/prod_business_purchase_orders/stream/2019-03-12T05:36:18.695
+      FunctionName:
+        Fn::GetAtt: [ ProdBusinessOrderSlackNotificationLambda, Arn ]
+      StartingPosition: LATEST
+
+  ProdBusinessOrderEmailNotificationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: prod_business_order_email_notifier
+      Handler: '/dist/lambda/email/index.handler'
+      Role:
+        Fn::GetAtt: [ ProdBusinessOrderEmailNotificationRole, Arn ]
+      Code:
+        S3Bucket: 'naloxone-exchange-lambda-functions'
+        S3Key: 'naloxone-exchange-lambdas.zip'
+      Runtime: 'nodejs8.10'
+      Timeout: 20
+      Environment:
+        Variables:
+          DOMAIN: 'naloxoneexchange.com'
+          METRIC_NAME: 'BusinessPurchaseOrder'
+          METRIC_NAMESPACE: 'Order'
+          STAGE: 'Prod'
+
+  ProdBusinessOrderEmailStreamEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: arn:aws:dynamodb:us-east-2:981428227757:table/prod_business_purchase_orders/stream/2019-03-12T05:36:18.695
+      FunctionName:
+        Fn::GetAtt: [ ProdBusinessOrderEmailNotificationLambda, Arn ]
+      StartingPosition: LATEST
